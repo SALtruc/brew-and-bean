@@ -41,13 +41,18 @@ export async function POST(request) {
       status: 'pending',
     };
 
-    // If DynamoDB is not configured (no AWS credentials available), still
-    // return a success response so the form is usable for local demo.
     try {
       await putOrder(order);
     } catch (dbErr) {
-      console.warn('[orders] DynamoDB write failed, continuing in demo mode:', dbErr.message);
-      // In production on EC2 with IAM role this should not happen; log it.
+      if (process.env.NODE_ENV === 'production') {
+        console.error('[orders] DynamoDB write failed:', dbErr);
+        return NextResponse.json(
+          { error: 'Không lưu được đơn hàng' },
+          { status: 500 }
+        );
+      }
+
+      console.warn('[orders] DynamoDB write failed, continuing in local demo mode:', dbErr.message);
     }
 
     return NextResponse.json({ ok: true, orderId: order.orderId });

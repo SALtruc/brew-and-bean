@@ -1,11 +1,20 @@
 import { galleryImages } from '@/lib/menu-data';
-import { s3Url } from '@/lib/s3';
+import { getS3ImageUrl } from '@/lib/s3';
 
 export const metadata = {
   title: 'Gallery — Brew & Bean',
 };
 
-export default function GalleryPage() {
+export const dynamic = 'force-dynamic';
+
+export default async function GalleryPage() {
+  const images = await Promise.all(
+    galleryImages.map(async (img) => ({
+      ...img,
+      url: await getS3ImageUrl(img.key, img.fallbackImage),
+    }))
+  );
+
   return (
     <div className="container">
       <div className="page-title">
@@ -15,12 +24,11 @@ export default function GalleryPage() {
       </div>
 
       <div className="gallery-grid">
-        {galleryImages.map((img, i) => {
-          const url = s3Url(img.key);
+        {images.map((img, i) => {
           return (
             <div key={img.key} className={`gallery-item gallery-item-${i + 1}`}>
-              {url ? (
-                <img src={url} alt={img.alt} loading="lazy" />
+              {img.url ? (
+                <img src={img.url} alt={img.alt} loading="lazy" />
               ) : (
                 <div className="gallery-placeholder">{img.alt}</div>
               )}

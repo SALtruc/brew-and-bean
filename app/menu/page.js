@@ -1,11 +1,20 @@
 import { menuItems, formatVND } from '@/lib/menu-data';
-import { s3Url } from '@/lib/s3';
+import { getS3ImageUrl } from '@/lib/s3';
 
 export const metadata = {
   title: 'Menu — Brew & Bean',
 };
 
-export default function MenuPage() {
+export const dynamic = 'force-dynamic';
+
+export default async function MenuPage() {
+  const items = await Promise.all(
+    menuItems.map(async (item) => ({
+      ...item,
+      imgUrl: await getS3ImageUrl(item.image, item.fallbackImage),
+    }))
+  );
+
   return (
     <div className="container">
       <div className="page-title">
@@ -15,13 +24,12 @@ export default function MenuPage() {
       </div>
 
       <div className="menu-grid">
-        {menuItems.map((item) => {
-          const imgUrl = s3Url(item.image);
+        {items.map((item) => {
           return (
             <article key={item.id} className="menu-card">
               <div className="menu-card-img">
-                {imgUrl ? (
-                  <img src={imgUrl} alt={item.name} loading="lazy" />
+                {item.imgUrl ? (
+                  <img src={item.imgUrl} alt={item.name} loading="lazy" />
                 ) : (
                   <div className="menu-card-img-placeholder">
                     {item.name.charAt(0)}
